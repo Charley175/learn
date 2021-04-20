@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#define NONE                  "\e[0m"           //清除颜色，即之后的打印为正常输出，之前的不受影响
+#define NONES                  "\e[0m"           //清除颜色，即之后的打印为正常输出，之前的不受影响
 #define BLACK                 "\e[0;30m"        //深黑
 #define L_BLACK             "\e[1;30m"          //亮黑，偏灰褐
 #define RED                     "\e[0;31m"      //深红，暗红
@@ -32,25 +32,25 @@
 //需在使用以下打印宏的.c文件中定义“DEBUG_LEVEL”变量
 #define LOG(info,...)  \
 do{ \
-    printf(BLUE"Info %s,%s,%d:"info"" NONE,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);\
+    printf(L_CYAN "Info %s,%s,%d:" info "" NONES, __FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);\
     printf("\n");\
 }while(0)
 
 #define WARNING(info,...)  \
 do{ \
-    printf(YELLOW"Warning %s,%s,%d:"info"" NONE,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);\
+    printf(YELLOW "Warning %s,%s,%d:" info "" NONES, __FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);\
     printf("\n");\
 }while(0)
 
 #define DEBUG(info,...)  \
 do{ \
-    printf("Debug %s,%s,%d:"info"",__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);\
+    printf("Debug %s,%s,%d:" info "", __FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);\
     printf("\n");\
 }while(0)
 
 #define ERROR(info,...)  \
 do{ \
-    printf(L_RED"Error %s,%s,%d:"info"" NONE,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);\
+    printf(L_RED "ERR %s,%s,%d:" info "" NONES, __FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);\
     printf("\n");\
 }while(0)
 

@@ -23,11 +23,11 @@ void *test(void *Arg)
 
     while (1)
     {
-        printf("%d, %lx\n", client_fd, pthread_self());
+        LOG("%d, %lx", client_fd, pthread_self());
         int n = read(client_fd, buf, sizeof(buf));
         if ( n <= 0 )
         {
-            printf(" %lx exit \n",  pthread_self());
+            LOG(" %lx exit ",  pthread_self());
             close(client_fd);
             return NULL;
         }
@@ -44,7 +44,7 @@ int fd = -1;
 void Stop(int signo) 
 {
 	//threadpool_destroy(pool, FLAGS_WAIT_TASK_EXIT);
-    printf("ccc\n");
+    LOG("ccc");
     close(fd);
     exit(0);
 }
@@ -68,7 +68,7 @@ int main (int argc, char ** argv)
         perror("socket");
         exit(1);
     }
-
+    ThreadPool_t *Pool = PoolInit(0, 10, 100);
 //	int rc = threadpool_create(&pool, 1, 10, 100, 1000);
 //	if (rc < 0) {
 //		printf("threadpool_create false\n");
@@ -113,11 +113,11 @@ int main (int argc, char ** argv)
         inet_ntop(AF_INET, &client_addr, buf, INET_ADDRSTRLEN);
 	    printf("client IP is: %s, client port is: %d, socket_fd addr = %p\n", buf, ntohs(client_addr.sin_port), &clientfd);
 
-		// rc = threadpool_add_task(pool, test, (void *)&clientfd);
+		// int rc = AddTask(pool, test, (void *)&clientfd);
 		// if (rc < 0) {
-        //     threadpool_destroy(pool, FLAGS_WAIT_TASK_EXIT);
-		// 	printf("threadpool_create false\n");
-		// 	return -1;
+            // threadpool_destroy(pool, FLAGS_WAIT_TASK_EXIT);
+			ERROR("threadpool_create false");
+			return -1;
 		// }
 
     }

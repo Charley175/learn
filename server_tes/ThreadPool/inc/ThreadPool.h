@@ -48,5 +48,8 @@ typedef struct {
    /*线程池状态*/
    int ShutDown;                          /* true为关闭 */
 }ThreadPool_t;
+/*向线程池的任务队列中添加一个任务*/
+int AddTask(ThreadPool_t *Pool, TaskFunc Func, void *Arg);
+ThreadPool_t *PoolInit(int MinThreadNum, int MaxThreadNum, int QueueSizeMax);
 
 #endif  /*__THREADPOOL_H*/
