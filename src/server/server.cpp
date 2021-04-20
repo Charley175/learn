@@ -16,6 +16,7 @@ extern "C"
 #include <strings.h>
 #include "Log.h"
 
+
 void *test(void *Arg)
 {
     if ( !Arg ) return NULL;
