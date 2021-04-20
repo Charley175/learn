@@ -3,8 +3,8 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <stdlib.h>
-#include <ctype.h>//toupper的头文件
-#include <arpa/inet.h>// sockaddr_in
+#include <ctype.h>  //toupper的头文件
+#include <arpa/inet.h>  // sockaddr_in
 extern "C" 
 {
     #include "ThreadPool.h"
@@ -56,7 +56,7 @@ int main (int argc, char ** argv)
 {
     if ( argc < 2 )
     {
-        printf("Please Input xxx [port]\n");
+        ERROR("Please Input xxx [port]");
         return 0;
     }
 
@@ -71,12 +71,13 @@ int main (int argc, char ** argv)
         perror("socket");
         exit(1);
     }
-    ThreadPool_t *Pool = PoolInit(0, 10, 100);
-//	int rc = threadpool_create(&pool, 1, 10, 100, 1000);
-//	if (rc < 0) {
-//		printf("threadpool_create false\n");
-//		return -1;
-//	}
+    ThreadPool_t *Pool = PoolInit(1 ,10, 100);
+
+	if ( !Pool ) 
+    {
+		ERROR("threadpool_create false\n");
+		return -1;
+	}
 
     struct sockaddr_in serv_addr, client_addr;
     socklen_t socklen;
@@ -116,12 +117,12 @@ int main (int argc, char ** argv)
         inet_ntop(AF_INET, &client_addr, buf, INET_ADDRSTRLEN);
 	    printf("client IP is: %s, client port is: %d, socket_fd addr = %p\n", buf, ntohs(client_addr.sin_port), &clientfd);
 
-		// int rc = AddTask(pool, test, (void *)&clientfd);
-		// if (rc < 0) {
+		 int rc = AddTask(Pool, test, (void *)&clientfd);
+		 if (rc < 0) {
             // threadpool_destroy(pool, FLAGS_WAIT_TASK_EXIT);
 			ERROR("threadpool_create false");
 			return -1;
-		// }
+		}
 
     }
 

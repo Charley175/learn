@@ -4,9 +4,9 @@ DIRS = ./ThreadPool ./src/server ./src/client
 PHONY   := all
 
 all: 
-	$(foreach DIR, $(DIRS), $(MAKE) -C $(DIR) ;)
+	@$(foreach DIR, $(DIRS), $(MAKE) -C $(DIR) ;)
 
 PHONY +=clean
 
 clean:
-	$(foreach DIR, $(DIRS), $(MAKE) -C $(DIR) clean;)
+	@$(foreach DIR, $(DIRS), $(MAKE) -C $(DIR) clean;)

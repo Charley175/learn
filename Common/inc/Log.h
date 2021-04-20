@@ -32,25 +32,25 @@
 //需在使用以下打印宏的.c文件中定义“DEBUG_LEVEL”变量
 #define LOG(info,...)  \
 do{ \
-    printf(L_CYAN "Info %s,%s,%d:" info "" NONES, __FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);\
+    printf(L_CYAN "[Info %s,%s,%d]:" info "" NONES, __FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);\
     printf("\n");\
 }while(0)
 
 #define WARNING(info,...)  \
 do{ \
-    printf(YELLOW "Warning %s,%s,%d:" info "" NONES, __FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);\
+    printf(YELLOW "[Warning %s,%s,%d]:" info "" NONES, __FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);\
     printf("\n");\
 }while(0)
 
 #define DEBUG(info,...)  \
 do{ \
-    printf("Debug %s,%s,%d:" info "", __FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);\
+    printf("[Debug %s,%s,%d]:" info "", __FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);\
     printf("\n");\
 }while(0)
 
 #define ERROR(info,...)  \
 do{ \
-    printf(L_RED "ERR %s,%s,%d:" info "" NONES, __FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);\
+    printf(L_RED "[ERR %s,%s,%d]:" info "" NONES, __FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);\
     printf("\n");\
 }while(0)
 
