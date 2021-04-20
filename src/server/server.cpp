@@ -5,7 +5,10 @@
 #include <stdlib.h>
 #include <ctype.h>//toupper的头文件
 #include <arpa/inet.h>// sockaddr_in
-#include "ThreadPool.h"
+extern "C" 
+{
+    #include "ThreadPool.h"
+}
 #include "errno.h"
 #include <unistd.h>
 #include <sys/wait.h>
