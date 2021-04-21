@@ -5,10 +5,7 @@
 #include <stdlib.h>
 #include <ctype.h>  //toupper的头文件
 #include <arpa/inet.h>  // sockaddr_in
-extern "C" 
-{
-    #include "ThreadPool.h"
-}
+#include "ThreadPool.h"
 #include "errno.h"
 #include <unistd.h>
 #include <sys/wait.h>
@@ -71,7 +68,7 @@ int main (int argc, char ** argv)
         perror("socket");
         exit(1);
     }
-    ThreadPool_t *Pool = PoolInit(1 ,10, 100);
+    ThreadPool_t *Pool = PoolInit(1 ,40, 100);
 
 	if ( !Pool ) 
     {
@@ -93,17 +90,19 @@ int main (int argc, char ** argv)
 
 	if ( bind(fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr) ) < 0) {
 		perror("bind");
- //       threadpool_destroy(pool, FLAGS_WAIT_TASK_EXIT);
-		return -1;
+        ThreadPoolDestroy(Pool);
+        return -1;
 	}
 
 	if ( listen(fd, 10) < 0 ) {
 		perror("listen");
- //       threadpool_destroy(pool, FLAGS_WAIT_TASK_EXIT);
-		return -1;
+        ThreadPoolDestroy(Pool);
+        return -1;
 	}
+
     char buf[100] ={0};
     socklen = sizeof(client_addr);
+
     for(;;)
     {
        	int clientfd = accept(fd, (struct sockaddr *)&client_addr, &socklen);
@@ -119,14 +118,14 @@ int main (int argc, char ** argv)
 
 		 int rc = AddTask(Pool, test, (void *)&clientfd);
 		 if (rc < 0) {
-            // threadpool_destroy(pool, FLAGS_WAIT_TASK_EXIT);
+            ThreadPoolDestroy(Pool);
 			ERROR("threadpool_create false");
 			return -1;
 		}
 
     }
 
-	// threadpool_destroy(pool, FLAGS_WAIT_TASK_EXIT);
+	ThreadPoolDestroy(Pool);
 
     return 0;
 }

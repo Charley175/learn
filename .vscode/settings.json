@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "log.h": "c",
-        "threadpool.h": "c"
+        "threadpool.h": "c",
+        "unistd.h": "c"
     }
 }

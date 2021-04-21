@@ -3,7 +3,12 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "Log.h"
+#include "errno.h"
+#include <unistd.h>
+#include <signal.h>
 
+#define DEFAULT_TIME  1
+#define DEFAULT_THREAD_NUM 5
 static ThreadPool_t *Manager = NULL;
 /*工作线程*/
 void *WorkThread(void *ThreadPool)
@@ -111,6 +116,80 @@ int AddTask(ThreadPool_t *Pool, TaskFunc Func, void *Arg)
    return 0;
 }
 
+/*线程是否存活*/
+int is_thread_alive(pthread_t Tid)
+{
+   int kill_rc = pthread_kill(Tid, 0);     //发送0号信号，测试是否存活
+   if (kill_rc == ESRCH)  //线程不存在
+      return false;
+   
+   return true;
+}
+
+/*管理线程*/
+void *ManagerThread(void *ThreadPool)
+{
+   int i;
+   ThreadPool_t *Pool = (ThreadPool_t *)ThreadPool;
+   while ( !Pool->ShutDown )
+   {
+      LOG("admin -----------------\n");
+      sleep(DEFAULT_TIME);                             /*隔一段时间再管理*/
+      pthread_mutex_lock(&(Pool->Lock));               /*加锁*/ 
+      int QueueSize = Pool->QueueSize;                 /*任务数*/
+      int LiveThreadNum = Pool->LiveThreadNum;          /*存活的线程数*/
+      pthread_mutex_unlock(&(Pool->Lock));             /*解锁*/
+
+      pthread_mutex_lock(&(Pool->ThreadCount));
+      int BusyThreadNum = Pool->BusyThreadNum;           /*忙线程数*/  
+      pthread_mutex_unlock(&(Pool->ThreadCount));
+
+      LOG("admin busy live -%d--%d-\n", BusyThreadNum, LiveThreadNum);
+
+      /*创建新线程 实际任务数量大于 最小正在等待的任务数量，存活线程数小于最大线程数*/
+      if ( QueueSize >= LiveThreadNum && LiveThreadNum <= Pool->MaxThreadNum)
+      {
+         LOG("admin add-----------\n");
+         pthread_mutex_lock(&(Pool->Lock));
+         int add = 0;
+
+         /*一次增加 DEFAULT_THREAD_NUM 个线程*/
+         for ( i = 0; (i < Pool->MaxThreadNum) && (add < DEFAULT_THREAD_NUM) && (Pool->LiveThreadNum < Pool->MaxThreadNum); ++i )
+         {
+            if (Pool->Thread[i] == 0 || !is_thread_alive(Pool->Thread[i]))
+           {
+              pthread_create(&(Pool->Thread[i]), NULL, WorkThread, (void *)Pool);
+              add++;
+              Pool->LiveThreadNum++;
+              LOG("new thread -----------------------\n");
+           }
+         }
+
+         pthread_mutex_unlock(&(Pool->Lock));
+      }
+
+      /*销毁多余的线程 忙线程x2 都小于 存活线程，并且存活的大于最小线程数*/
+      if ( (BusyThreadNum * 2) < LiveThreadNum  &&  LiveThreadNum > Pool->MinThreadNum )
+      {
+          LOG("admin busy --%d--%d----", BusyThreadNum, LiveThreadNum);
+         /*一次销毁DEFAULT_THREAD_NUM个线程*/
+         pthread_mutex_lock(&(Pool->Lock));
+         Pool->WaitDestoryNum = DEFAULT_THREAD_NUM;
+         pthread_mutex_unlock(&(Pool->Lock));
+
+         for ( i = 0; i < DEFAULT_THREAD_NUM; ++i )
+        {
+           //通知正在处于空闲的线程，自杀
+           pthread_cond_signal(&(Pool->QueueNotEmpty));
+           LOG("admin cler --\n");
+        }
+      }
+
+   }
+
+   return NULL;
+}
+
 /**
  * MinThreadNum ：池中最小线程数
  * MaxThreadNum ：池中最大线程数
@@ -124,12 +203,10 @@ ThreadPool_t *PoolInit(int MinThreadNum, int MaxThreadNum, int QueueSizeMax)
         return NULL;
     }
 
-    /*线程池指针*/
-    ThreadPool_t *Pool = NULL;
+    ThreadPool_t *Pool = NULL;    /*线程池指针*/
 
     do {
-        /*为线程池开辟空间*/
-        if ( !(Pool = (ThreadPool_t *)malloc(sizeof(ThreadPool_t))) )
+        if ( !(Pool = (ThreadPool_t *)malloc(sizeof(ThreadPool_t))) )        /*为线程池开辟空间*/
         {
             ERROR("malloc error");
             return NULL;
@@ -172,10 +249,6 @@ ThreadPool_t *PoolInit(int MinThreadNum, int MaxThreadNum, int QueueSizeMax)
             return NULL;
         }
 
-        /*创建工作线程*/
-        /**
-         *......
-        */
         /* 启动min_thr_num个工作线程 */
         for (int i =0; i < Pool->MinThreadNum; ++i )
         {
@@ -185,17 +258,62 @@ ThreadPool_t *PoolInit(int MinThreadNum, int MaxThreadNum, int QueueSizeMax)
         }
 
         /*创建管理线程*/
-       /**
-         *......
-        */
-       return Pool;
+      /* 管理者线程 admin_thread函数在后面讲解 */
+        pthread_create(&(Pool->Manager), NULL, ManagerThread, (void *)Pool);
+
+        return Pool;
     }while (0);
 
     return NULL;
 }
 
-void ThreadPoolDestory(ThreadPool_t *Pool)
+/*释放线程池*/
+int ThreadPoolFree(ThreadPool_t *Pool)
 {
+   if (Pool == NULL)
+     return -1;
 
+   if (Pool->TaskQueue)
+      free(Pool->TaskQueue);
 
+   if ( Pool->Thread )
+   {
+      free(Pool->Thread);
+      pthread_mutex_lock(&(Pool->Lock));               /*先锁住再销毁*/
+      pthread_mutex_destroy(&(Pool->Lock));
+      pthread_mutex_lock(&(Pool->ThreadCount));
+      pthread_mutex_destroy(&(Pool->ThreadCount));
+      pthread_cond_destroy(&(Pool->QueueNotEmpty));
+      pthread_cond_destroy(&(Pool->QueueNotFull));
+   }
+   free(Pool);
+   Pool = NULL;
+
+   return 0;
+}
+
+int ThreadPoolDestroy(ThreadPool_t *Pool)
+{
+    if ( !Pool )
+        return -1;
+    
+    Pool->ShutDown = true;
+
+    /*销毁管理者线程*/
+    pthread_join(Pool->Manager, NULL);
+
+    int i;
+
+    //通知所有线程去自杀(在自己领任务的过程中)
+    for ( i = 0; i < Pool->LiveThreadNum; ++i )
+        pthread_cond_broadcast(&(Pool->QueueNotEmpty));
+
+    /*等待线程结束 先是pthread_exit 然后等待其结束*/
+    for ( i = 0; i < Pool->LiveThreadNum; ++i )
+        pthread_join(Pool->Thread[i], NULL);
+
+    if ( 0 != ThreadPoolFree(Pool) )
+        ERROR("-------------Thread Destory Fail Please Check!-------------");
+
+    return 0;
 }

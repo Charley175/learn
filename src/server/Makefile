@@ -5,10 +5,10 @@ C_OBJ = $(patsubst %.c,%.o,$(wildcard ./*.c))
 CPP_OBJ = $(patsubst %.cpp,%.o,$(wildcard ./*.cpp))
 OBJ = $(C_OBJ) $(CPP_OBJ)
 INCLUDE = -I ../../ThreadPool/inc -I ../../Common/inc -I ./
-LIB_SO = -lpthread -L../../ThreadPool/ -lthread_pool 
+LIB_SO = -lefence -lpthread -L../../ThreadPool/ -lthread_pool 
 
 #CFLAGS=-Werror -g -fPIC -DDEBUG_LOG
-CFLAGS = -Werror -g
+CFLAGS = -Werror -g -ggdb -O0
 
 target = server
 

@@ -11,7 +11,7 @@
 #include <pthread.h>
 
 /**
- *  Task 
+ *  Task handler
 */
 typedef void *(*TaskFunc)(void *);
 
@@ -49,9 +49,17 @@ typedef struct {
    int ShutDown;                          /* true为关闭 */
 }ThreadPool_t;
 
+#ifdef __cplusplus
+extern "C" 
+{
+#endif
 
-int AddTask(ThreadPool_t *Pool, TaskFunc Func, void *Arg);
 ThreadPool_t *PoolInit(int MinThreadNum, int MaxThreadNum, int QueueSizeMax);
+int AddTask(ThreadPool_t *Pool, TaskFunc Func, void *Arg);
+int ThreadPoolDestroy(ThreadPool_t *Pool);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif  /*__THREADPOOL_H*/

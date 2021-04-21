@@ -3,11 +3,10 @@ CXX = g++
 
 OBJ = $(patsubst %.c,%.o,$(wildcard ./src/*.c))
 THREAD_INCLUDE = -I ./inc -I ../Common/inc
-LIB= -lpthread
+LIB= -lefence -lpthread
 
 #CFLAGS=-Werror -g -fPIC -DDEBUG_LOG
-CFLAGS = -Werror -g -fPIC
-
+CFLAGS = -Werror -g -O0 -ggdb -fPIC 
 target = libthread_pool.so
 
 $(target):$(OBJ)
