@@ -39,11 +39,11 @@ void *test(void *Arg)
     return NULL;
 }
 
-void *pool;
+ ThreadPool_t *Pool = NULL;
 int fd = -1;
 void Stop(int signo) 
 {
-	//threadpool_destroy(pool, FLAGS_WAIT_TASK_EXIT);
+    ThreadPoolDestroy(Pool);
     LOG("ccc");
     close(fd);
     exit(0);
@@ -68,11 +68,12 @@ int main (int argc, char ** argv)
         perror("socket");
         exit(1);
     }
-    ThreadPool_t *Pool = PoolInit(1 ,40, 100);
+    Pool = PoolInit(1 ,40, 100);
 
 	if ( !Pool ) 
     {
 		ERROR("threadpool_create false\n");
+        close(fd);
 		return -1;
 	}
 
@@ -90,6 +91,7 @@ int main (int argc, char ** argv)
 
 	if ( bind(fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr) ) < 0) {
 		perror("bind");
+        close(fd);
         ThreadPoolDestroy(Pool);
         return -1;
 	}
@@ -97,6 +99,7 @@ int main (int argc, char ** argv)
 	if ( listen(fd, 10) < 0 ) {
 		perror("listen");
         ThreadPoolDestroy(Pool);
+        close(fd);
         return -1;
 	}
 
@@ -119,6 +122,7 @@ int main (int argc, char ** argv)
 		 int rc = AddTask(Pool, test, (void *)&clientfd);
 		 if (rc < 0) {
             ThreadPoolDestroy(Pool);
+            close(fd);
 			ERROR("threadpool_create false");
 			return -1;
 		}
@@ -126,6 +130,7 @@ int main (int argc, char ** argv)
     }
 
 	ThreadPoolDestroy(Pool);
+    close(fd);
 
     return 0;
 }

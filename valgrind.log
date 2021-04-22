@@ -1,0 +1,37 @@
+==40520== Memcheck, a memory error detector
+==40520== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==40520== Using Valgrind-3.15.0 and LibVEX; rerun with -h for copyright info
+==40520== Command: ./src/server/server 5000
+==40520== Parent PID: 30026
+==40520== 
+==40520== 
+==40520== HEAP SUMMARY:
+==40520==     in use at exit: 544 bytes in 2 blocks
+==40520==   total heap usage: 6 allocs, 4 frees, 3,728 bytes allocated
+==40520== 
+==40520== 272 bytes in 1 blocks are possibly lost in loss record 1 of 2
+==40520==    at 0x483DD99: calloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==40520==    by 0x4014B1A: allocate_dtv (dl-tls.c:343)
+==40520==    by 0x4014B1A: _dl_allocate_tls (dl-tls.c:589)
+==40520==    by 0x4869322: allocate_stack (allocatestack.c:622)
+==40520==    by 0x4869322: pthread_create@@GLIBC_2.2.5 (pthread_create.c:660)
+==40520==    by 0x48840F8: PoolInit (ThreadPool.c:290)
+==40520==    by 0x1096E3: main (server.cpp:71)
+==40520== 
+==40520== 272 bytes in 1 blocks are possibly lost in loss record 2 of 2
+==40520==    at 0x483DD99: calloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==40520==    by 0x4014B1A: allocate_dtv (dl-tls.c:343)
+==40520==    by 0x4014B1A: _dl_allocate_tls (dl-tls.c:589)
+==40520==    by 0x4869322: allocate_stack (allocatestack.c:622)
+==40520==    by 0x4869322: pthread_create@@GLIBC_2.2.5 (pthread_create.c:660)
+==40520==    by 0x4884180: PoolInit (ThreadPool.c:296)
+==40520==    by 0x1096E3: main (server.cpp:71)
+==40520== 
+==40520== LEAK SUMMARY:
+==40520==    definitely lost: 0 bytes in 0 blocks
+==40520==    indirectly lost: 0 bytes in 0 blocks
+==40520==      possibly lost: 544 bytes in 2 blocks
+==40520==    still reachable: 0 bytes in 0 blocks
+==40520==         suppressed: 0 bytes in 0 blocks
+==40520== 
+==40520== ERROR SUMMARY: 2 errors from 2 contexts (suppressed: 0 from 0)
