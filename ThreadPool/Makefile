@@ -6,7 +6,7 @@ THREAD_INCLUDE = -I ./inc -I ../Common/inc
 LIB= -lpthread
 
 #CFLAGS=-Werror -g -fPIC -DDEBUG_LOG
-CFLAGS = -Wall -Werror -g -O0 -ggdb -fPIC 
+CFLAGS = -g -O0 -ggdb -Wall -Werror -fPIC 
 target = libthread_pool.so
 
 $(target):$(OBJ)

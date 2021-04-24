@@ -14,9 +14,10 @@
 /*工作线程*/
 void *WorkThread(void *ThreadPool)
 {
+    pthread_detach(pthread_self());
+
     ThreadPool_t *Pool = (ThreadPool_t *)ThreadPool;
     ThreadPoolTask_t Task;
-    pthread_detach(pthread_self());
 
     while (true)
     {
@@ -137,11 +138,13 @@ int is_thread_alive(pthread_t Tid)
 void *ManagerThread(void *ThreadPool)
 {
     pthread_detach(pthread_self());
+
     int i;
     ThreadPool_t *Pool = (ThreadPool_t *)ThreadPool;
-    while (!Pool->ShutDown)
+
+    while ( !Pool->ShutDown )
     {
-        LOG("admin -----------------\n");
+        LOG("admin -ShutDown-------%d---------\n", Pool->ShutDown);
         sleep(DEFAULT_TIME);                     /*隔一段时间再管理*/
         pthread_mutex_lock(&(Pool->Lock));       /*加锁*/
         int QueueSize = Pool->QueueSize;         /*任务数*/
@@ -166,16 +169,31 @@ void *ManagerThread(void *ThreadPool)
             {
                 if (Pool->Thread[i] == 0 || !is_thread_alive(Pool->Thread[i]))
                 {
-                    pthread_attr_t attr;
-                    pthread_attr_init(&attr);
-                    /* 设置线程的属性为分离的 */
-                    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+                    // pthread_attr_t attr;
+                    // if (pthread_attr_init(&attr) != 0)
+                    // {
+                    //     pthread_mutex_unlock(&(Pool->Lock));
+                    //     break;
+                    // }
+                    // if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) != 0)
+                    // {
+                    //     pthread_mutex_unlock(&(Pool->Lock));
+                    //     break;
+                    // }
+                    // /* 设置线程的属性为分离的 */
+               
 
-                    pthread_create(&(Pool->Thread[i]), &attr, WorkThread, (void *)Pool);
-                    add++;
-                    Pool->LiveThreadNum++;
+                    if (pthread_create(&(Pool->Thread[i]), NULL, WorkThread, (void *)Pool) == 0)
+                    {
+                        add++;
+                        Pool->LiveThreadNum++;
+                    }
                     LOG("new thread -----------------------\n");
-                    pthread_attr_destroy(&attr);
+                    // if ( pthread_attr_destroy(&attr) != 0 )
+                    // {
+                    //     pthread_mutex_unlock(&(Pool->Lock));
+                    //     break;
+                    // }
                 }
             }
 
@@ -199,7 +217,9 @@ void *ManagerThread(void *ThreadPool)
             }
         }
     }
-
+    
+    LOG("manager exit \n");
+    pthread_exit(NULL);
     return NULL;
 }
 
@@ -277,23 +297,25 @@ ThreadPool_t *PoolInit(int MinThreadNum, int MaxThreadNum, int QueueSizeMax)
             return NULL;
         }
 
-        pthread_attr_t attr;
-        pthread_attr_init(&attr);
+        // pthread_attr_t attr;
+        // if (pthread_attr_init(&attr) != 0)
+        //     break;
 
-        /* 设置线程的属性为分离的 */
-        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+        // if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) != 0)
+        //     break;
 
         /* 启动min_thr_num个工作线程 */
         for (int i = 0; i < Pool->MinThreadNum; ++i)
         {
             /* pool指向当前线程池  threadpool_thread函数在后面讲解 */
-            pthread_create(&(Pool->Thread[i]), &attr, WorkThread, (void *)Pool);
+            pthread_create(&(Pool->Thread[i]), NULL, WorkThread, (void *)Pool);
             LOG("start thread 0x%x... ", (unsigned int)Pool->Thread[i]);
         }
 
         /*创建管理线程*/
-        pthread_create(&(Pool->Manager), &attr, ManagerThread, (void *)Pool);
-        pthread_attr_destroy(&attr);
+        pthread_create(&(Pool->Manager), NULL, ManagerThread, (void *)Pool);
+        // if ( pthread_attr_destroy(NULL) != 0 )
+        //     break;
 
         return Pool;
     } while (0);
@@ -316,13 +338,14 @@ int ThreadPoolFree(ThreadPool_t *Pool)
     {
         free(Pool->Thread);
         Pool->Thread = NULL;
-        // pthread_mutex_lock(&(Pool->Lock)); /*先锁住再销毁*/
+        pthread_mutex_lock(&(Pool->Lock)); /*先锁住再销毁*/
         pthread_mutex_destroy(&(Pool->Lock));
-        // pthread_mutex_lock(&(Pool->ThreadCount));
+        pthread_mutex_lock(&(Pool->ThreadCount));
         pthread_mutex_destroy(&(Pool->ThreadCount));
         pthread_cond_destroy(&(Pool->QueueNotEmpty));
         pthread_cond_destroy(&(Pool->QueueNotFull));
     }
+
     free(Pool);
     Pool = NULL;
 

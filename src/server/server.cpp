@@ -39,12 +39,12 @@ void *test(void *Arg)
     return NULL;
 }
 
- ThreadPool_t *Pool = NULL;
+ThreadPool_t *Pool = NULL;
 int fd = -1;
 void Stop(int signo) 
 {
     ThreadPoolDestroy(Pool);
-    LOG("ccc");
+    Pool = NULL;
     close(fd);
     exit(0);
 }
@@ -76,7 +76,7 @@ int main (int argc, char ** argv)
         close(fd);
 		return -1;
 	}
-
+        
     struct sockaddr_in serv_addr, client_addr;
     socklen_t socklen;
 

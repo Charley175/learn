@@ -8,7 +8,7 @@ INCLUDE = -I ../../ThreadPool/inc -I ../../Common/inc -I ./
 LIB_SO = -lpthread -L../../ThreadPool/ -lthread_pool 
 
 #CFLAGS=-Werror -g -fPIC -DDEBUG_LOG
-CFLAGS = -Wall -Werror -g -ggdb -O0
+CFLAGS = -g -ggdb -O0 -Wall -Werror 
 
 target = server
 
