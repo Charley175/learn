@@ -11,6 +11,14 @@
 #define DEFAULT_TIME 1
 #define DEFAULT_THREAD_NUM 5
 
+// static void CleanUp(void* Arg) 
+// {
+//     if ( !Arg ) return;
+
+//     ERROR("Clean up handler of %ld thread.", pthread_self());
+//     pthread_mutex_unlock((pthread_mutex_t *)Arg);
+// }
+
 void ErrorHandle(void ** Pointer)
 {
     if ( *Pointer )
@@ -25,7 +33,12 @@ void *WorkThread(void *ThreadPool)
 {
     pthread_detach(pthread_self());
 
+    if ( !ThreadPool ) return NULL;
+
     ThreadPool_t *Pool = (ThreadPool_t *)ThreadPool;
+
+    // pthread_cleanup_push(CleanUp, &(Pool->Lock));
+
     ThreadPoolTask_t Task;
 
     while (true)
@@ -35,7 +48,7 @@ void *WorkThread(void *ThreadPool)
         /* 无任务则阻塞在 “任务队列不为空” 上，有任务则跳出 */
         while ((Pool->QueueSize == 0) && (!Pool->ShutDown))
         {
-            LOG("thread 0x%x is waiting \n", (unsigned int)pthread_self());
+            LOG("thread 0x%x is waiting ", (unsigned int)pthread_self());
             pthread_cond_wait(&(Pool->QueueNotEmpty), &(Pool->Lock));
         }
 
@@ -44,16 +57,17 @@ void *WorkThread(void *ThreadPool)
         {
             Pool->WaitDestoryNum--;
             /* 判断线程池中的线程数是否大于最小线程数，是则结束当前线程 */
-            if (Pool->LiveThreadNum > Pool->MinThreadNum)
+            if ( Pool->LiveThreadNum > Pool->MinThreadNum )
             {
-                for (int i = 0; i < Pool->MaxThreadNum; i++) 
+                for (int i = 0; i < Pool->MaxThreadNum; i++ ) 
                 {
                     if(pthread_equal(Pool->Thread[i], pthread_self())) {
                         memset(Pool->Thread + i, 0, sizeof(pthread_t));
-                        LOG("thread 0x%x is exiting \n", (unsigned int)pthread_self());
+                        WARNING("thread 0x%x is exiting ", (unsigned int)pthread_self());
                         Pool->LiveThreadNum--;
                         pthread_mutex_unlock(&(Pool->Lock));
                         pthread_exit(NULL); //结束线程
+
                     }
                 }
             }
@@ -64,7 +78,7 @@ void *WorkThread(void *ThreadPool)
         if (Pool->ShutDown && Pool->QueueSize == 0) //关闭线程池
         {
             pthread_mutex_unlock(&(Pool->Lock));
-            LOG("thread 0x%x is exiting \n", (unsigned int)pthread_self());
+            LOG("thread 0x%x is exiting ", (unsigned int)pthread_self());
             pthread_exit(NULL); //线程自己结束自己
         }
 
@@ -82,7 +96,7 @@ void *WorkThread(void *ThreadPool)
         pthread_mutex_unlock(&(Pool->Lock));
 
         //执行刚才取出的任务
-        LOG("thread 0x%x start working \n", (unsigned int)pthread_self());
+        LOG("thread 0x%x start working ", (unsigned int)pthread_self());
         pthread_mutex_lock(&(Pool->ThreadCount)); //锁住忙线程变量
         Pool->BusyThreadNum++;
         pthread_mutex_unlock(&(Pool->ThreadCount));
@@ -90,12 +104,13 @@ void *WorkThread(void *ThreadPool)
         (*(Task.Task))(Task.Arg); //执行任务
 
         //任务结束处理
-        WARNING("thread 0x%x end working \n", (unsigned int)pthread_self());
+        WARNING("thread 0x%x end working ", (unsigned int)pthread_self());
         pthread_mutex_lock(&(Pool->ThreadCount));
         Pool->BusyThreadNum--;
         pthread_mutex_unlock(&(Pool->ThreadCount));
     }
 
+    // pthread_cleanup_pop(0);
     pthread_exit(NULL);
 }
 
@@ -150,8 +165,13 @@ void *ManagerThread(void *ThreadPool)
 {
     pthread_detach(pthread_self());
 
-    int i;
+    if ( !ThreadPool ) return NULL;
+
     ThreadPool_t *Pool = (ThreadPool_t *)ThreadPool;
+
+    // pthread_cleanup_push(CleanUp, &(Pool->Lock));
+
+    int i;
 
     while ( !Pool->ShutDown )
     {
@@ -165,10 +185,10 @@ void *ManagerThread(void *ThreadPool)
         int BusyThreadNum = Pool->BusyThreadNum; /*忙线程数*/
         pthread_mutex_unlock(&(Pool->ThreadCount));
 
-        LOG("admin busy live -%d--%d-\n", BusyThreadNum, LiveThreadNum);
+        LOG("admin busy live -%d--%d-", BusyThreadNum, LiveThreadNum);
 
         /*创建新线程 实际任务数量大于 最小正在等待的任务数量，存活线程数小于最大线程数*/
-        if (QueueSize >= LiveThreadNum && LiveThreadNum <= Pool->MaxThreadNum)
+        if (QueueSize >= LiveThreadNum && LiveThreadNum <= Pool->MaxThreadNum && !Pool->ShutDown )
         {
             pthread_mutex_lock(&(Pool->Lock));
             int add = 0;
@@ -206,7 +226,9 @@ void *ManagerThread(void *ThreadPool)
         }
     }
     
-    LOG("manager exit \n");
+    LOG("manager exit ");
+    // pthread_cleanup_pop(0);
+
     pthread_exit(NULL);
     return NULL;
 }
@@ -298,15 +320,15 @@ ThreadPool_t *PoolInit(int MinThreadNum, int MaxThreadNum, int QueueSizeMax)
 /*释放线程池*/
 int ThreadPoolFree(ThreadPool_t *Pool)
 {
-    if (Pool == NULL)
+    if ( Pool == NULL )
         return -1;
 
-    if (Pool->TaskQueue){
+    if ( Pool->TaskQueue ){
         free(Pool->TaskQueue);
         Pool->TaskQueue = NULL;
     }
 
-    if (Pool->Thread)
+    if ( Pool->Thread )
     {
         free(Pool->Thread);
         Pool->Thread = NULL;
@@ -333,13 +355,19 @@ int ThreadPoolDestroy(ThreadPool_t *Pool)
 
     /*销毁管理者线程*/
     //  pthread_join(Pool->Manager, NULL);
-    
-    int i;
-
+    int i = 0;
     //通知所有线程去自杀(在自己领任务的过程中)
-    for (i = 0; i < Pool->LiveThreadNum; ++i)
+    for ( i = 0; i < Pool->LiveThreadNum; ++i)
         pthread_cond_broadcast(&(Pool->QueueNotEmpty));
 
+    Pool->WaitDestoryNum = Pool->MaxThreadNum;
+    Pool->MinThreadNum = 0;
+    
+    while ( i-- )
+    {
+        LOG("12313 : %d\n", Pool->LiveThreadNum);
+        sleep(1);
+    }
     /*等待线程结束 先是pthread_exit 然后等待其结束*/
     //  for ( i = 0; i < Pool->MaxThreadNum; ++i )
     //  {
