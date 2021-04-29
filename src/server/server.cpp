@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <stdlib.h>
-#include <ctype.h>  //toupper的头文件
+#include <ctype.h>      //toupper的头文件
 #include <arpa/inet.h>  // sockaddr_in
 #include "ThreadPool.h"
 #include "errno.h"
@@ -60,7 +60,7 @@ int main (int argc, char ** argv)
 
     signal(SIGINT, Stop); 
 
-    printf("Server Port : %d\n", atoi(argv[1]));
+    LOG("Server Port : %d\n", atoi(argv[1]));
 
     /*IPV4 , TCP, defult protocol*/
      fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -118,7 +118,7 @@ int main (int argc, char ** argv)
 		}
 
         inet_ntop(AF_INET, &client_addr, buf, INET_ADDRSTRLEN);
-	    printf("client IP is: %s, client port is: %d, socket_fd addr = %p\n", buf, ntohs(client_addr.sin_port), &clientfd);
+	    LOG("client IP is: %s, client port is: %d, socket_fd addr = %p\n", buf, ntohs(client_addr.sin_port), &clientfd);
 
 		 int rc = AddTask(Pool, test, (void *)&clientfd);
 		 if (rc < 0) {

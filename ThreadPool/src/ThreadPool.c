@@ -11,6 +11,15 @@
 #define DEFAULT_TIME 1
 #define DEFAULT_THREAD_NUM 5
 
+void ErrorHandle(void ** Pointer)
+{
+    if ( *Pointer )
+    {
+        free(*Pointer);
+        *Pointer = NULL;    
+    }
+}
+
 /*工作线程*/
 void *WorkThread(void *ThreadPool)
 {
@@ -73,7 +82,7 @@ void *WorkThread(void *ThreadPool)
         pthread_mutex_unlock(&(Pool->Lock));
 
         //执行刚才取出的任务
-        printf("thread 0x%x start working \n", (unsigned int)pthread_self());
+        LOG("thread 0x%x start working \n", (unsigned int)pthread_self());
         pthread_mutex_lock(&(Pool->ThreadCount)); //锁住忙线程变量
         Pool->BusyThreadNum++;
         pthread_mutex_unlock(&(Pool->ThreadCount));
@@ -81,7 +90,7 @@ void *WorkThread(void *ThreadPool)
         (*(Task.Task))(Task.Arg); //执行任务
 
         //任务结束处理
-        printf("thread 0x%x end working \n", (unsigned int)pthread_self());
+        WARNING("thread 0x%x end working \n", (unsigned int)pthread_self());
         pthread_mutex_lock(&(Pool->ThreadCount));
         Pool->BusyThreadNum--;
         pthread_mutex_unlock(&(Pool->ThreadCount));
@@ -100,7 +109,7 @@ int AddTask(ThreadPool_t *Pool, TaskFunc Func, void *Arg)
         pthread_cond_wait(&(Pool->QueueNotFull), &(Pool->Lock));
 
     /*如果线程池处于关闭状态*/
-    if (Pool->ShutDown)
+    if ( Pool->ShutDown )
     {
         pthread_mutex_unlock(&(Pool->Lock));
         return -1;
@@ -146,7 +155,6 @@ void *ManagerThread(void *ThreadPool)
 
     while ( !Pool->ShutDown )
     {
-        LOG("admin -ShutDown-------%d---------\n", Pool->ShutDown);
         sleep(DEFAULT_TIME);                     /*隔一段时间再管理*/
         pthread_mutex_lock(&(Pool->Lock));       /*加锁*/
         int QueueSize = Pool->QueueSize;         /*任务数*/
@@ -162,7 +170,6 @@ void *ManagerThread(void *ThreadPool)
         /*创建新线程 实际任务数量大于 最小正在等待的任务数量，存活线程数小于最大线程数*/
         if (QueueSize >= LiveThreadNum && LiveThreadNum <= Pool->MaxThreadNum)
         {
-            LOG("admin add-----------\n");
             pthread_mutex_lock(&(Pool->Lock));
             int add = 0;
 
@@ -176,7 +183,6 @@ void *ManagerThread(void *ThreadPool)
                         add++;
                         Pool->LiveThreadNum++;
                     }
-                    LOG("new thread -----------------------\n");
                 }
             }
 
@@ -196,7 +202,6 @@ void *ManagerThread(void *ThreadPool)
             {
                 //通知正在处于空闲的线程，自杀
                 pthread_cond_signal(&(Pool->QueueNotEmpty));
-                LOG("admin cler --\n");
             }
         }
     }
@@ -243,8 +248,7 @@ ThreadPool_t *PoolInit(int MinThreadNum, int MaxThreadNum, int QueueSizeMax)
         if (!Pool->Thread)
         {
             ERROR("Thread Malloc Error");
-            free(Pool);
-            Pool = NULL;
+            ErrorHandle((void **)&Pool);
             return NULL;
         }
 
@@ -255,11 +259,8 @@ ThreadPool_t *PoolInit(int MinThreadNum, int MaxThreadNum, int QueueSizeMax)
         if (!Pool->TaskQueue)
         {
             ERROR("ThskQueue Malloc Error");
-            free(Pool->Thread);
-            Pool->Thread = NULL;
-            free(Pool);
-            Pool = NULL;
-
+            ErrorHandle((void **)&Pool->Thread);
+            ErrorHandle((void **)&Pool);
             return NULL;
         }
 
@@ -271,12 +272,9 @@ ThreadPool_t *PoolInit(int MinThreadNum, int MaxThreadNum, int QueueSizeMax)
             pthread_cond_init(&(Pool->QueueNotFull), NULL) != 0)
         {
             ERROR("Lock Init Error");
-            free(Pool->TaskQueue);
-            Pool->TaskQueue = NULL;
-            free(Pool->Thread);
-            Pool->Thread = NULL;
-            free(Pool);
-            Pool = NULL;
+            ErrorHandle((void **)&Pool->TaskQueue);
+            ErrorHandle((void **)&Pool->Thread);
+            ErrorHandle((void **)&Pool);
             return NULL;
         }
 
