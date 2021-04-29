@@ -240,7 +240,7 @@ void *ManagerThread(void *ThreadPool)
 */
 ThreadPool_t *PoolInit(int MinThreadNum, int MaxThreadNum, int QueueSizeMax)
 {
-    if ((MaxThreadNum < MinThreadNum) || MinThreadNum < 1 || QueueSizeMax < 1)
+    if (( MaxThreadNum < MinThreadNum ) || MinThreadNum < 1 || QueueSizeMax < 1)
     {
         ERROR("Invalid parameter");
         return NULL;
@@ -363,11 +363,9 @@ int ThreadPoolDestroy(ThreadPool_t *Pool)
     Pool->WaitDestoryNum = Pool->MaxThreadNum;
     Pool->MinThreadNum = 0;
     
-    while ( i-- )
-    {
-        LOG("12313 : %d\n", Pool->LiveThreadNum);
+    while ( i-- )   //等待线程退出
         sleep(1);
-    }
+
     /*等待线程结束 先是pthread_exit 然后等待其结束*/
     //  for ( i = 0; i < Pool->MaxThreadNum; ++i )
     //  {
