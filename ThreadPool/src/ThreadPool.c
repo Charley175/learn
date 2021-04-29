@@ -28,29 +28,31 @@ void *WorkThread(void *ThreadPool)
         {
             LOG("thread 0x%x is waiting \n", (unsigned int)pthread_self());
             pthread_cond_wait(&(Pool->QueueNotEmpty), &(Pool->Lock));
+        }
 
-            /* 判断是否需要清除线程,自杀功能 */
-            if (Pool->WaitDestoryNum > 0)
+        /* 判断是否需要清除线程,自杀功能 */
+        if ( Pool->WaitDestoryNum > 0 )
+        {
+            Pool->WaitDestoryNum--;
+            /* 判断线程池中的线程数是否大于最小线程数，是则结束当前线程 */
+            if (Pool->LiveThreadNum > Pool->MinThreadNum)
             {
-                Pool->WaitDestoryNum--;
-                /* 判断线程池中的线程数是否大于最小线程数，是则结束当前线程 */
-                if (Pool->LiveThreadNum > Pool->MinThreadNum)
+                for (int i = 0; i < Pool->MaxThreadNum; i++) 
                 {
-                    for (int i = 0; i < Pool->MaxThreadNum; i++) {
-					if(pthread_equal(Pool->Thread[i], pthread_self())) {
-						memset(Pool->Thread + i, 0, sizeof(pthread_t));
+                    if(pthread_equal(Pool->Thread[i], pthread_self())) {
+                        memset(Pool->Thread + i, 0, sizeof(pthread_t));
                         LOG("thread 0x%x is exiting \n", (unsigned int)pthread_self());
                         Pool->LiveThreadNum--;
                         pthread_mutex_unlock(&(Pool->Lock));
                         pthread_exit(NULL); //结束线程
-					}
-				    }
+                    }
                 }
             }
         }
 
+
         /* 线程池开关状态 */
-        if (Pool->ShutDown) //关闭线程池
+        if (Pool->ShutDown && Pool->QueueSize == 0) //关闭线程池
         {
             pthread_mutex_unlock(&(Pool->Lock));
             LOG("thread 0x%x is exiting \n", (unsigned int)pthread_self());
@@ -169,31 +171,12 @@ void *ManagerThread(void *ThreadPool)
             {
                 if (Pool->Thread[i] == 0 || !is_thread_alive(Pool->Thread[i]))
                 {
-                    // pthread_attr_t attr;
-                    // if (pthread_attr_init(&attr) != 0)
-                    // {
-                    //     pthread_mutex_unlock(&(Pool->Lock));
-                    //     break;
-                    // }
-                    // if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) != 0)
-                    // {
-                    //     pthread_mutex_unlock(&(Pool->Lock));
-                    //     break;
-                    // }
-                    // /* 设置线程的属性为分离的 */
-               
-
                     if (pthread_create(&(Pool->Thread[i]), NULL, WorkThread, (void *)Pool) == 0)
                     {
                         add++;
                         Pool->LiveThreadNum++;
                     }
                     LOG("new thread -----------------------\n");
-                    // if ( pthread_attr_destroy(&attr) != 0 )
-                    // {
-                    //     pthread_mutex_unlock(&(Pool->Lock));
-                    //     break;
-                    // }
                 }
             }
 
@@ -297,13 +280,6 @@ ThreadPool_t *PoolInit(int MinThreadNum, int MaxThreadNum, int QueueSizeMax)
             return NULL;
         }
 
-        // pthread_attr_t attr;
-        // if (pthread_attr_init(&attr) != 0)
-        //     break;
-
-        // if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) != 0)
-        //     break;
-
         /* 启动min_thr_num个工作线程 */
         for (int i = 0; i < Pool->MinThreadNum; ++i)
         {
@@ -314,8 +290,6 @@ ThreadPool_t *PoolInit(int MinThreadNum, int MaxThreadNum, int QueueSizeMax)
 
         /*创建管理线程*/
         pthread_create(&(Pool->Manager), NULL, ManagerThread, (void *)Pool);
-        // if ( pthread_attr_destroy(NULL) != 0 )
-        //     break;
 
         return Pool;
     } while (0);

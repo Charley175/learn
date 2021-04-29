@@ -23,7 +23,7 @@ void *test(void *Arg)
 
     while (1)
     {
-        LOG("%d, %lx", client_fd, pthread_self());
+      // LOG("%d, %lx", client_fd, pthread_self());
         int n = read(client_fd, buf, sizeof(buf));
         if ( n <= 0 )
         {
@@ -31,6 +31,7 @@ void *test(void *Arg)
             close(client_fd);
             return NULL;
         }
+        LOG("%s", buf);
 		write(client_fd, buf, n);
     }
 

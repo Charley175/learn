@@ -46,30 +46,50 @@ int main(int argc,char* argv[])
     }
     
     char buf[1024];
+    char send_buffer[100] = "hello server i am client!";
+    int i = 0;
     //先写后读
     while(1)
     {
-        LOG("please Enter# ");
-        fflush(stdout);
-        ssize_t s = read(0, buf, sizeof(buf) - 1);
-        if(s > 0)
+        for (; i < 200; ++i )
         {
-
-            buf[s - 1] = 0;
-            write(sock,buf,strlen(buf));
-            ssize_t _s = read(sock,buf,sizeof(buf) - 1);
-            if(_s > 0)
-            {
-                buf[_s] = 0;
-                LOG("server echo# %s\n",buf);
+            // send
+            int num = write(sock, (char *)send_buffer, strlen(send_buffer));
+            if (num <= 0) {
+                printf("send error\n");
+                return -1;
             }
-            else
+        
+            // recv
+            num = recv(sock, buf, 1024, 0);
+            if (num > 0) // success
             {
-                ERROR("Server exit\n");
-                break;
+                printf("rcv buffer = %s,:%d\n", buf, i);
             }
         }
+
+        // WARNING("please Enter# ");
+        // fflush(stdout);
+        // ssize_t s = read(0, buf, sizeof(buf) - 1);
+        // if(s > 0)
+        // {
+
+        //     buf[s - 1] = 0;
+        //     write(sock,buf,strlen(buf));
+        //     ssize_t _s = read(sock,buf,sizeof(buf) - 1);
+        //     if(_s > 0)
+        //     {
+        //         buf[_s] = 0;
+        //         WARNING("server echo# %s",buf);
+        //     }
+        //     else
+        //     {
+        //         ERROR("Server exit");
+        //         break;
+        //     }
+        // }
     }
     close(sock);
+
     return 0;
 }
