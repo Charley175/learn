@@ -1,28 +1,14 @@
-==15954== Memcheck, a memory error detector
-==15954== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
-==15954== Using Valgrind-3.17.0 and LibVEX; rerun with -h for copyright info
-==15954== Command: ./src/server/server 5000
-==15954== Parent PID: 8061
-==15954== 
-==15954== 
-==15954== HEAP SUMMARY:
-==15954==     in use at exit: 272 bytes in 1 blocks
-==15954==   total heap usage: 11 allocs, 10 frees, 5,438 bytes allocated
-==15954== 
-==15954== 272 bytes in 1 blocks are possibly lost in loss record 1 of 1
-==15954==    at 0x484147B: calloc (vg_replace_malloc.c:1117)
-==15954==    by 0x4014B1A: allocate_dtv (dl-tls.c:343)
-==15954==    by 0x4014B1A: _dl_allocate_tls (dl-tls.c:589)
-==15954==    by 0x486F322: allocate_stack (allocatestack.c:622)
-==15954==    by 0x486F322: pthread_create@@GLIBC_2.2.5 (pthread_create.c:660)
-==15954==    by 0x488A02F: PoolInit (ThreadPool.c:307)
-==15954==    by 0x1096D7: main (server.cpp:72)
-==15954== 
-==15954== LEAK SUMMARY:
-==15954==    definitely lost: 0 bytes in 0 blocks
-==15954==    indirectly lost: 0 bytes in 0 blocks
-==15954==      possibly lost: 272 bytes in 1 blocks
-==15954==    still reachable: 0 bytes in 0 blocks
-==15954==         suppressed: 0 bytes in 0 blocks
-==15954== 
-==15954== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)
+==46871== Memcheck, a memory error detector
+==46871== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==46871== Using Valgrind-3.15.0 and LibVEX; rerun with -h for copyright info
+==46871== Command: ./src/server/server 5000
+==46871== Parent PID: 33969
+==46871== 
+==46871== 
+==46871== HEAP SUMMARY:
+==46871==     in use at exit: 0 bytes in 0 blocks
+==46871==   total heap usage: 11 allocs, 11 frees, 5,438 bytes allocated
+==46871== 
+==46871== All heap blocks were freed -- no leaks are possible
+==46871== 
+==46871== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)

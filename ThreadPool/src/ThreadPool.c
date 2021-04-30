@@ -245,6 +245,7 @@ ThreadPool_t *PoolInit(int MinThreadNum, int MaxThreadNum, int QueueSizeMax)
         ERROR("Invalid parameter");
         return NULL;
     }
+
     ThreadPool_t *Pool = NULL; /*线程池指针*/
     do
     {
@@ -354,7 +355,7 @@ int ThreadPoolDestroy(ThreadPool_t *Pool)
     Pool->ShutDown = true;
 
     /*销毁管理者线程*/
-    //  pthread_join(Pool->Manager, NULL);
+    // pthread_join(Pool->Manager, NULL);
     int i = 0;
     //通知所有线程去自杀(在自己领任务的过程中)
     for ( i = 0; i < Pool->LiveThreadNum; ++i)
@@ -369,8 +370,14 @@ int ThreadPoolDestroy(ThreadPool_t *Pool)
     /*等待线程结束 先是pthread_exit 然后等待其结束*/
     //  for ( i = 0; i < Pool->MaxThreadNum; ++i )
     //  {
-    //     if ( !Pool->Thread[i] )
-    //      pthread_join(Pool->Thread[i], NULL);
+    //     if ( Pool->Thread[i] )
+    //     {
+    //         while((ret = pthread_join(Pool->Thread[i], NULL)) != 0 )
+    //         {
+    //             sleep(1);
+    //         }
+
+    //     }
     //  }
     if (0 != ThreadPoolFree(Pool))
         ERROR("-------------Thread Destory Fail Please Check!-------------");

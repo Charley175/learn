@@ -13,6 +13,13 @@
 #include <strings.h>
 #include "Log.h"
 
+#include <sys/epoll.h>
+#include <sys/resource.h>
+#include <fcntl.h>
+
+#define MAX_FDS            10240 //10240
+#define MAX_EVENTS         MAX_FDS
+
 void *test(void *Arg)
 {
     if ( !Arg ) return NULL;
@@ -54,30 +61,36 @@ int main (int argc, char ** argv)
 {
     if ( argc < 2 )
     {
-        ERROR("Please Input xxx [port]");
+        ERROR("Please Input port");
         return 0;
     }
 
-    signal(SIGINT, Stop); 
+    /*修改文件描述符限制*/
+	struct rlimit FdLimit = {0};
 
-    LOG("Server Port : %d\n", atoi(argv[1]));
+	FdLimit.rlim_cur = MAX_EVENTS;
+	FdLimit.rlim_max = MAX_EVENTS;
+
+	setrlimit(RLIMIT_NOFILE, &FdLimit);
+	getrlimit(RLIMIT_NOFILE, &FdLimit);
+
+    LOG("Cur : %d \n Max : %d", (int)FdLimit.rlim_cur, (int)FdLimit.rlim_max);
+
+    signal(SIGINT, Stop); 
+	if ( !(Pool = PoolInit(1 ,40, 100)) ) 
+    {
+		ERROR("threadpool_create false\n");
+		return -1;
+	}
 
     /*IPV4 , TCP, defult protocol*/
-     fd = socket(AF_INET, SOCK_STREAM, 0);
+    fd = socket(AF_INET, SOCK_STREAM, 0);
     if ( fd < 0 )
     {
         perror("socket");
         exit(1);
     }
-    Pool = PoolInit(1 ,40, 100);
 
-	if ( !Pool ) 
-    {
-		ERROR("threadpool_create false\n");
-        close(fd);
-		return -1;
-	}
-        
     struct sockaddr_in serv_addr, client_addr;
     socklen_t socklen;
 
@@ -109,6 +122,7 @@ int main (int argc, char ** argv)
 
     for(;;)
     {
+
        	int clientfd = accept(fd, (struct sockaddr *)&client_addr, &socklen);
 		if (-1 == clientfd) {
 			if (EINTR == errno)
@@ -127,7 +141,6 @@ int main (int argc, char ** argv)
 			ERROR("threadpool_create false");
 			return -1;
 		}
-
     }
 
 	ThreadPoolDestroy(Pool);
